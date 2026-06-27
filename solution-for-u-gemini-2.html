@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Solution for U</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+::-webkit-scrollbar{display:none}
+html,body{height:100%;overflow:hidden;background:#070713}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#EDE7FF;display:flex;justify-content:center}
+#setup{position:fixed;inset:0;z-index:100;background:#070713;display:flex;align-items:center;justify-content:center;padding:24px}
+.setup-card{width:100%;max-width:360px;background:rgba(145,85,255,.08);border:1px solid rgba(145,85,255,.25);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;gap:16px}
+.setup-logo{font-size:22px;font-weight:700;background:linear-gradient(90deg,#CCAAFF,#9155FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.setup-sub{font-size:13px;color:rgba(237,231,255,.5);line-height:1.55;margin-top:4px}
+.setup-inp{background:rgba(255,255,255,.05);border:1px solid rgba(145,85,255,.3);border-radius:12px;padding:12px 14px;color:#EDE7FF;font-size:14px;font-family:inherit;outline:none;width:100%}
+.setup-inp:focus{border-color:rgba(145,85,255,.6)}
+.setup-btn{background:linear-gradient(135deg,#9155FF,#6528C0);color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.setup-btn:hover{opacity:.88}
+.setup-btn:disabled{opacity:.5;cursor:not-allowed}
+.setup-note{font-size:11px;color:rgba(145,85,255,.55);text-align:center}
+.setup-note a{color:#9B6FFF}
+.setup-err{font-size:12px;color:#ff6b6b;display:none;margin-top:6px}
+#app{display:flex;flex-direction:column;height:100vh;width:100%;max-width:430px;position:relative;overflow:hidden}
+.glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:340px;height:260px;background:radial-gradient(ellipse,rgba(140,80,255,.17) 0%,transparent 68%);pointer-events:none;z-index:0}
+header{display:flex;align-items:center;gap:11px;padding:15px 17px 12px;background:rgba(7,7,19,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(140,80,255,.12);position:relative;z-index:10;flex-shrink:0}
+.av-wrap{position:relative;flex-shrink:0}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#9155FF,#5A2EA0);display:flex;align-items:center;justify-content:center;font-size:17px;position:relative;z-index:1;box-shadow:0 0 0 2px rgba(145,85,255,.25),0 0 18px rgba(145,85,255,.3)}
+.av-ring{position:absolute;inset:-5px;border-radius:50%;background:rgba(145,85,255,.15);animation:av-pulse 2.8s ease-in-out infinite;z-index:0}
+.h-info{flex:1;min-width:0}
+.h-name{font-weight:700;font-size:15px;letter-spacing:-.2px;background:linear-gradient(90deg,#CCAAFF,#9155FF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+.h-status{font-size:11px;margin-top:2px;font-weight:500;display:flex;align-items:center;gap:4px;color:#4E8465}
+.h-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.mbadge{font-size:10px;padding:3px 8px;border-radius:10px}
+.mbadge.learning{color:#9155FF;background:rgba(145,85,255,.1);border:1px solid rgba(145,85,255,.22)}
+.mbadge.saved{color:#4E8465;background:rgba(78,132,101,.1);border:1px solid rgba(78,132,101,.22)}
+.mbadge.err{color:#ff6b6b;background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.22)}
+.mcount{font-size:10px;color:rgba(145,85,255,.45);padding:3px 6px}
+main{flex:1;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none;position:relative;z-index:1}
+.mrow{display:flex;align-items:flex-end;gap:7px;animation:msg-in .22s ease forwards}
+.mrow.assistant{justify-content:flex-start}
+.mrow.user{justify-content:flex-end}
+.mav{width:26px;height:26px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#9155FF,#5A2EA0);display:flex;align-items:center;justify-content:center;font-size:11px;margin-bottom:1px;box-shadow:0 0 9px rgba(145,85,255,.3)}
+.mbub{max-width:77%;padding:10px 14px;font-size:14.5px;line-height:1.58;word-break:break-word;white-space:pre-wrap}
+.mbub.assistant{border-radius:17px 17px 17px 4px;background:rgba(255,255,255,.052);border:1px solid rgba(145,85,255,.15);color:#E0D5FF}
+.mbub.user{border-radius:17px 17px 4px 17px;background:linear-gradient(135deg,#9155FF,#6528C0);color:#fff;box-shadow:0 3px 13px rgba(145,85,255,.22)}
+.mbub.error-msg{border-color:rgba(255,107,107,.25);color:#ffaaaa}
+#typing{display:none;align-items:flex-end;gap:7px}
+#typing.show{display:flex}
+.tbub{padding:12px 17px;background:rgba(255,255,255,.052);border-radius:17px 17px 17px 4px;border:1px solid rgba(145,85,255,.15);display:flex;gap:5px;align-items:center}
+.dot{width:5.5px;height:5.5px;border-radius:50%;background:#9155FF}
+.dot:nth-child(1){animation:dot-b 1.25s ease-in-out 0s infinite}
+.dot:nth-child(2){animation:dot-b 1.25s ease-in-out .21s infinite}
+.dot:nth-child(3){animation:dot-b 1.25s ease-in-out .42s infinite}
+#qp{padding:3px 13px 8px;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;min-height:36px}
+.qbtn{padding:7px 12px;border-radius:18px;border:1px solid rgba(145,85,255,.25);background:rgba(145,85,255,.07);color:#BEA0FF;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:background .15s}
+.qbtn:hover{background:rgba(145,85,255,.15)}
+footer{padding:9px 13px 15px;background:rgba(7,7,19,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(145,85,255,.09);position:relative;z-index:10;flex-shrink:0}
+.inp-wrap{display:flex;gap:9px;align-items:flex-end;background:rgba(255,255,255,.04);border:1.5px solid rgba(145,85,255,.2);border-radius:22px;padding:7px 7px 7px 15px;transition:border-color .2s}
+.inp-wrap:focus-within{border-color:rgba(145,85,255,.45)}
+textarea{flex:1;background:transparent;border:none;outline:none;color:#EDE7FF;font-size:14.5px;resize:none;line-height:1.52;max-height:108px;overflow-y:auto;padding-top:3px;font-family:inherit;caret-color:#9155FF}
+textarea::placeholder{color:rgba(200,185,255,.22)}
+#sbtn{width:34px;height:34px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .18s ease;cursor:pointer}
+#sbtn.on{background:linear-gradient(135deg,#9155FF,#6528C0);color:#fff;box-shadow:0 0 14px rgba(145,85,255,.38)}
+#sbtn.off{background:rgba(145,85,255,.1);color:rgba(145,85,255,.3);cursor:not-allowed}
+.fnote{text-align:center;font-size:9.5px;color:rgba(237,231,255,.17);margin:7px 0 0}
+.clr-btn{font-size:10px;color:rgba(145,85,255,.35);background:none;border:none;cursor:pointer;padding:2px 4px;font-family:inherit}
+.clr-btn:hover{color:rgba(255,107,107,.6)}
+/* Clear confirm inline toast */
+.clr-confirm{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:rgba(237,231,255,.6)}
+.clr-confirm button{font-size:10px;padding:2px 7px;border-radius:8px;border:none;cursor:pointer;font-family:inherit}
+.clr-yes{background:rgba(255,107,107,.2);color:#ff9999}
+.clr-no{background:rgba(145,85,255,.15);color:#BEA0FF}
+@keyframes av-pulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.2);opacity:.15}}
+@keyframes dot-b{0%,80%,100%{transform:translateY(0);opacity:.3}40%{transform:translateY(-5px);opacity:1}}
+@keyframes msg-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <div class="setup-card">
+    <div>
+      <div class="setup-logo">Solution for U ✦</div>
+      <p class="setup-sub">Tera emotional wellness companion. Google Gemini ka free API key daalo — sirf tumhare device pe save hoga. Generous free tier milta hai!</p>
+    </div>
+    <div>
+      <input type="password" id="key-inp" class="setup-inp" placeholder="AIza..." autocomplete="off" />
+      <p class="setup-err" id="key-err">Valid key daalo (AIza se shuru hona chahiye)</p>
+    </div>
+    <button class="setup-btn" id="setup-btn" onclick="saveKey()">Shuru Karo →</button>
+    <p class="setup-note">Free key milegi <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a> pe • Get API Key</p>
+  </div>
+</div>
+
+<div id="app">
+  <div class="glow"></div>
+  <header>
+    <div class="av-wrap">
+      <div class="av">✦</div>
+      <div class="av-ring"></div>
+    </div>
+    <div class="h-info">
+      <div class="h-name">Solution for U</div>
+      <div class="h-status" id="hstatus">
+        <span style="color:#4E8465">●</span>&nbsp;hamesha yahan hun
+      </div>
+    </div>
+    <div class="h-right" id="marea"></div>
+  </header>
+  <main id="msgs"></main>
+  <div id="qp"></div>
+  <footer>
+    <div class="inp-wrap">
+      <textarea id="ta" rows="1" placeholder="Jo dil mein hai, bata do..." oninput="onInput()" onkeydown="onKey(event)"></textarea>
+      <button id="sbtn" class="off" onclick="send()">▶</button>
+    </div>
+    <p class="fnote">Solution for U — AI companion, professional help se replace nahi karta</p>
+  </footer>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let msgs=[];          // actual conversation turns sent to API
+let mems=[];          // persistent memory facts
+let uname=null;       // extracted user name
+let busy=false;       // send lock
+let extracting=false; // FIX #3: lock for extractMems to prevent concurrent runs
+let key="";
+
+const QUICK=["Bahut akela feel ho raha hun","Overthinking band nahi hoti","Dost ne hurt kiya","Koi nahi samajhta mujhe"];
+const EXT=`From this conversation extract important facts to remember about the user. Include: name, relationships, emotional patterns, ongoing problems. Return ONLY a valid JSON array of short strings. No markdown, no explanation. If nothing: []`;
+// ── Gemini config ────────────────────────────────────────────────
+const MODEL="gemini-2.5-flash";
+const API_BASE="https://generativelanguage.googleapis.com/v1beta/models/";
+function apiUrl(){return API_BASE+MODEL+":generateContent";}
+// FIX #4 & #5: Keep only last 20 turns to avoid token limit errors
+const MAX_MSGS=20;
+
+// Gemini 2.5 models default safety threshold to OFF already, but venting about
+// being hurt/bullied can still brush against harassment/hate-speech filters.
+// We give those two a little headroom while keeping sexual/dangerous content
+// at the standard filtering level, since this app is teen-facing.
+const SAFETY_SETTINGS=[
+  {category:"HARM_CATEGORY_HARASSMENT",threshold:"BLOCK_ONLY_HIGH"},
+  {category:"HARM_CATEGORY_HATE_SPEECH",threshold:"BLOCK_ONLY_HIGH"},
+  {category:"HARM_CATEGORY_SEXUALLY_EXPLICIT",threshold:"BLOCK_MEDIUM_AND_ABOVE"},
+  {category:"HARM_CATEGORY_DANGEROUS_CONTENT",threshold:"BLOCK_MEDIUM_AND_ABOVE"}
+];
+
+// ── Convert our internal {role:"user"|"assistant", content} turns
+// into Gemini's {role:"user"|"model", parts:[{text}]} format.
+function toGeminiContents(turns){
+  return turns.map(m=>({
+    role: m.role==="assistant" ? "model" : "user",
+    parts: [{text: m.content}]
+  }));
+}
+
+// Build a full Gemini request body given a system prompt, history turns,
+// and generation params. Centralized here so both send() and extractMems()
+// stay in sync and don't duplicate (and drift on) the request shape.
+function buildGeminiBody(systemText, turns, {temperature, maxTokens}){
+  return {
+    systemInstruction:{parts:[{text:systemText}]},
+    contents: toGeminiContents(turns),
+    generationConfig:{temperature, maxOutputTokens:maxTokens},
+    safetySettings: SAFETY_SETTINGS
+  };
+}
+
+// Pull the text out of a Gemini generateContent response, or throw a
+// descriptive error covering the various non-text/blocked cases.
+function extractGeminiText(d){
+  const cand=d?.candidates?.[0];
+  if(!cand){
+    const blockReason=d?.promptFeedback?.blockReason;
+    if(blockReason) throw new Error("BLOCKED:"+blockReason);
+    throw new Error("NO_CANDIDATE");
+  }
+  if(cand.finishReason==="SAFETY"||cand.finishReason==="RECITATION"||cand.finishReason==="PROHIBITED_CONTENT"){
+    throw new Error("BLOCKED:"+cand.finishReason);
+  }
+  const text=cand?.content?.parts?.map(p=>p.text||"").join("")||"";
+  return text;
+}
+
+// ── System prompt ──────────────────────────────────────────────────
+function sysPrompt(){
+  const nn=uname?`User ka naam ${uname} hai. `:"";
+  const mn=mems.length?"\n\nPichli baaton se yaad hai:\n"+mems.slice(-18).map(m=>"• "+m).join("\n"):"";
+  return `Tum "Solution for U" ho — Indian teenagers ke liye emotional wellness companion.\n${nn}${mn}\n\nStyle:\n- Close dost ki tarah baat karo — "yaar","bhai","acha haan","sach mein?","arey","matlab" natural use karo\n- Hinglish mix karo jaise user karta hai\n- Short responses — 1-3 sentences usually\n- Pehle feelings validate karo PHIR advice\n- Ek hi follow-up question poocho\n- Bullet points kabhi mat use karo — bas baat karo\n- User ki energy match karo\n- Is conversation ki memory rakho\n- Naam pata ho toh use karo warmly\n- Crisis mein trusted adult suggest karo\n\nReal bano. Present raho.`;
+}
+
+// ── LocalStorage helper ────────────────────────────────────────────
+const ls={
+  g:k=>{try{return localStorage.getItem(k)}catch{return null}},
+  s:(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){console.warn("Storage failed:",e);return false}}
+};
+
+// ── Setup / API key ────────────────────────────────────────────────
+async function saveKey(){
+  const v=document.getElementById("key-inp").value.trim();
+  const err=document.getElementById("key-err");
+  const btn=document.getElementById("setup-btn");
+  if(!v.startsWith("AIza")){
+    err.textContent="Valid key daalo (AIza se shuru hona chahiye)";
+    err.style.display="block";
+    return;
+  }
+  btn.disabled=true;
+  btn.textContent="Check kar raha hun...";
+  err.style.display="none";
+  try{
+    const r=await fetch(apiUrl(),{method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":v},
+      body:JSON.stringify({contents:[{role:"user",parts:[{text:"hi"}]}],generationConfig:{maxOutputTokens:5}})
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||d.error){
+      err.textContent="Key kaam nahi kar rahi: "+(d?.error?.message||`HTTP ${r.status}`);
+      err.style.display="block";
+      btn.disabled=false;
+      btn.textContent="Shuru Karo →";
+      return;
+    }
+  } catch{
+    // offline — allow, will fail at chat time
+  }
+  ls.s("sfu_key",v);
+  key=v;
+  document.getElementById("setup").style.display="none";
+  btn.disabled=false;
+  btn.textContent="Shuru Karo →";
+}
+
+document.getElementById("key-inp").addEventListener("keydown",e=>{
+  if(e.key==="Enter") saveKey();
+});
+
+// ── Init ───────────────────────────────────────────────────────────
+function init(){
+  key=ls.g("sfu_key")||"";
+  try{mems=JSON.parse(ls.g("sfu_mems")||"[]");}catch{mems=[];}
+  uname=ls.g("sfu_uname")||null;
+  if(key) document.getElementById("setup").style.display="none";
+  updateMem();
+
+  const g=uname
+    ?`Hey ${uname}! Wapas aaye — achha laga 💜 Aaj kaisa chal raha hai?`
+    :mems.length
+      ?`Hey! Main yahan hun 💜 Kuch time se soch raha tha tumhare baare mein — aaj kaisa feel ho raha hai?`
+      :`Hey! Main hun Solution for U 💜 Yahan koi judgment nahi — bas tum aur main. Aaj kaisa feel ho raha hai?`;
+
+  // FIX #1: Show greeting in UI but do NOT push to msgs[]
+  // So AI doesn't see its own greeting as conversation history
+  showMsgInUI("assistant", g);
+  renderQuick();
+}
+
+// ── Scroll ─────────────────────────────────────────────────────────
+function scrollB(){
+  const m=document.getElementById("msgs");
+  requestAnimationFrame(()=>m.scrollTop=m.scrollHeight);
+}
+
+// ── Show message in UI only (no msgs[] push) ───────────────────────
+function showMsgInUI(role, content, isError=false){
+  const row=document.createElement("div");
+  row.className="mrow "+role;
+  if(role==="assistant"){
+    const av=document.createElement("div");av.className="mav";av.textContent="✦";row.appendChild(av);
+  }
+  const bub=document.createElement("div");
+  bub.className="mbub "+role+(isError?" error-msg":"");
+  bub.textContent=content;
+  row.appendChild(bub);
+  document.getElementById("msgs").appendChild(row);
+  scrollB();
+}
+
+// ── Add message to history + UI ────────────────────────────────────
+function addMsg(role, content, isError=false){
+  if(!isError){
+    msgs.push({role, content});
+    // FIX #4 & #5: Trim msgs to MAX_MSGS to prevent token limit errors
+    // Always keep pairs (user+assistant) — trim from front
+    if(msgs.length > MAX_MSGS){
+      msgs=msgs.slice(msgs.length - MAX_MSGS);
+    }
+  }
+  showMsgInUI(role, content, isError);
+}
+
+// ── Typing indicator ───────────────────────────────────────────────
+function showTyping(){
+  let el=document.getElementById("typing");
+  if(!el){
+    el=document.createElement("div");el.id="typing";
+    const av=document.createElement("div");av.className="mav";av.textContent="✦";
+    const tb=document.createElement("div");tb.className="tbub";
+    tb.innerHTML=`<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+    el.appendChild(av);el.appendChild(tb);
+    document.getElementById("msgs").appendChild(el);
+  }
+  el.classList.add("show");scrollB();
+}
+function hideTyping(){const e=document.getElementById("typing");if(e)e.classList.remove("show");}
+
+// ── Header status ──────────────────────────────────────────────────
+function setStatus(b){
+  const el=document.getElementById("hstatus");
+  el.innerHTML=b
+    ?`<span style="animation:blink 1s ease infinite;color:#9155FF">●</span>&nbsp;soch raha hun...`
+    :`<span style="color:#4E8465">●</span>&nbsp;hamesha yahan hun`;
+}
+
+// ── Memory badge ───────────────────────────────────────────────────
+let memT=null;
+function updateMem(tag){
+  clearTimeout(memT);
+  const el=document.getElementById("marea");
+  if(tag==="learning"){
+    el.innerHTML=`<span class="mbadge learning">yaad kar raha hun...</span>`;
+  } else if(tag==="saved"){
+    el.innerHTML=`<span class="mbadge saved">✓ yaad kiya</span>`;
+    memT=setTimeout(()=>updateMem(),2500);
+  } else if(tag==="err"){
+    el.innerHTML=`<span class="mbadge err">memory error</span>`;
+    memT=setTimeout(()=>updateMem(),2500);
+  } else {
+    el.innerHTML=mems.length
+      ?`<span class="mcount">${mems.length} yaadein</span><button class="clr-btn" onclick="askClearMems()" title="Memory clear karo">✕</button>`
+      :"";
+  }
+}
+
+// FIX #2: Inline mobile-friendly confirmation instead of blocking dialog
+function askClearMems(){
+  const el=document.getElementById("marea");
+  el.innerHTML=`<span class="clr-confirm">Sure? <button class="clr-yes" onclick="clearMems()">Haan</button><button class="clr-no" onclick="updateMem()">Nahi</button></span>`;
+}
+
+function clearMems(){
+  mems=[];uname=null;
+  ls.s("sfu_mems","[]");
+  ls.s("sfu_uname","");
+  updateMem();
+}
+
+// ── Quick prompts ──────────────────────────────────────────────────
+function renderQuick(){
+  const el=document.getElementById("qp");el.innerHTML="";
+  QUICK.forEach(p=>{
+    const b=document.createElement("button");
+    b.className="qbtn";b.textContent=p;
+    b.onclick=()=>{
+      const ta=document.getElementById("ta");
+      ta.value=p;onInput();
+      document.getElementById("qp").innerHTML="";
+      ta.focus();
+    };
+    el.appendChild(b);
+  });
+}
+
+// ── Input handlers ─────────────────────────────────────────────────
+function onInput(){
+  const ta=document.getElementById("ta");
+  ta.style.height="auto";
+  ta.style.height=Math.min(ta.scrollHeight,108)+"px";
+  document.getElementById("sbtn").className=(ta.value.trim()&&!busy)?"on":"off";
+}
+
+function onKey(e){
+  if(e.key==="Enter"&&!e.shiftKey&&!busy){
+    e.preventDefault();
+    send();
+  }
+}
+
+// ── Send message ───────────────────────────────────────────────────
+async function send(){
+  const ta=document.getElementById("ta");
+  const txt=ta.value.trim();
+  if(!txt||busy)return;
+  if(!key){document.getElementById("setup").style.display="flex";return;}
+
+  document.getElementById("qp").innerHTML="";
+  addMsg("user",txt);
+  ta.value="";ta.style.height="auto";
+  document.getElementById("sbtn").className="off";
+  busy=true;setStatus(true);showTyping();
+
+  try{
+    const r=await fetch(apiUrl(),{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":key},
+      body:JSON.stringify(buildGeminiBody(sysPrompt(), msgs, {temperature:0.85, maxTokens:800}))
+    });
+
+    if(!r.ok){
+      const errData=await r.json().catch(()=>({}));
+      const errMsg=errData?.error?.message||`HTTP ${r.status}`;
+      hideTyping();
+      if(r.status===400&&/api[_ ]?key/i.test(errMsg)){
+        addMsg("assistant","Yaar API key galat lag rahi hai — setup mein jaake check karo 🔑",true);
+        setTimeout(()=>document.getElementById("setup").style.display="flex",1500);
+      } else if(r.status===403){
+        addMsg("assistant","Yaar API key galat lag rahi hai — setup mein jaake check karo 🔑",true);
+        setTimeout(()=>document.getElementById("setup").style.display="flex",1500);
+      } else if(r.status===429){
+        addMsg("assistant","Thoda slow karo yaar — bahut zyada requests ho gayi, 1 minute baad try karo ⏳",true);
+      } else if(r.status===400){
+        // Could be token limit — msgs already trimmed but just in case
+        addMsg("assistant","Kuch gadbad ho gayi yaar — ek baar phir try karo 💜",true);
+      } else {
+        addMsg("assistant","Error aa gaya: "+errMsg+" — phir try karo 💜",true);
+      }
+      return;
+    }
+
+    const d=await r.json();
+    hideTyping();
+
+    let content;
+    try{
+      content=extractGeminiText(d);
+    } catch(extractErr){
+      if(String(extractErr.message).startsWith("BLOCKED")){
+        addMsg("assistant","Yeh topic mujhe filter ho raha hai yaar, thoda alag tarike se bata sakte ho? 💜",true);
+      } else {
+        addMsg("assistant","Hmm, koi response nahi aaya — dobara try karo yaar 💜",true);
+      }
+      return;
+    }
+    if(!content){
+      addMsg("assistant","Hmm, koi response nahi aaya — dobara try karo yaar 💜",true);
+      return;
+    }
+
+    addMsg("assistant",content.trim());
+
+    // FIX #3: Only run extractMems if not already running
+    const uc=msgs.filter(m=>m.role==="user").length;
+    if(uc>0&&uc%4===0&&!extracting) extractMems();
+
+  } catch(err){
+    hideTyping();
+    addMsg("assistant","Network issue lag raha hai — internet check karo aur phir try karo 💜",true);
+    console.error("Send error:",err);
+  } finally {
+    busy=false;
+    setStatus(false);
+    document.getElementById("sbtn").className=
+      document.getElementById("ta").value.trim()?"on":"off";
+  }
+}
+
+// ── Extract & save memories ────────────────────────────────────────
+async function extractMems(){
+  if(extracting) return; // FIX #3: hard guard
+  extracting=true;
+  updateMem("learning");
+
+  try{
+    // FIX #4: Use trimmed msgs snapshot for memory too
+    const msgSnapshot=msgs.slice(-MAX_MSGS);
+    const extractSys="Extract facts from conversations as a JSON array of short strings. Return ONLY valid JSON. No markdown, no backticks, no explanation. Example: [\"User name is Rahul\",\"Feels lonely at school\"]";
+    const turnsForExtraction=[...msgSnapshot,{role:"user",content:EXT}];
+
+    const r=await fetch(apiUrl(),{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-goog-api-key":key},
+      body:JSON.stringify(buildGeminiBody(extractSys, turnsForExtraction, {temperature:0.3, maxTokens:400}))
+    });
+
+    if(!r.ok){updateMem();return;}
+    const d=await r.json();
+
+    let rawText;
+    try{
+      rawText=extractGeminiText(d);
+    } catch{
+      updateMem();return;
+    }
+    if(!rawText){updateMem();return;}
+
+    let facts=[];
+    try{
+      const cleaned=rawText.trim().replace(/```json\s*/gi,"").replace(/```\s*/g,"").trim();
+      const match=cleaned.match(/\[[\s\S]*\]/);
+      if(match) facts=JSON.parse(match[0]);
+    } catch(parseErr){
+      console.warn("Memory parse failed:",parseErr);
+      updateMem();
+      return;
+    }
+
+    if(!Array.isArray(facts)||!facts.length){updateMem();return;}
+
+    const merged=[...mems,...facts]
+      .filter(f=>typeof f==="string"&&f.trim())
+      .filter((v,i,a)=>a.findIndex(x=>x.toLowerCase()===v.toLowerCase())===i)
+      .slice(-25);
+
+    mems=merged;
+    ls.s("sfu_mems",JSON.stringify(merged));
+
+    // FIX #5 bonus: improved name regex — handles Hindi names & lowercase
+    if(!uname){
+      for(const f of facts){
+        // Match: "naam X hai", "name is X", "called X", "User X" patterns
+        const m=f.match(/naam\s+([A-Za-z][A-Za-z]+)|name\s+is\s+([A-Za-z][A-Za-z]+)|called\s+([A-Za-z][A-Za-z]+)|User\s+([A-Za-z][A-Za-z]+)/i);
+        if(m){
+          const extracted=m[1]||m[2]||m[3]||m[4];
+          // Avoid generic words
+          const skip=["the","a","an","is","are","was","has","have","been","not","no","user","name"];
+          if(!skip.includes(extracted.toLowerCase())){
+            uname=extracted.charAt(0).toUpperCase()+extracted.slice(1).toLowerCase();
+            ls.s("sfu_uname",uname);
+            break;
+          }
+        }
+      }
+    }
+    updateMem("saved");
+  } catch(err){
+    console.warn("Memory extraction failed:",err);
+    updateMem("err");
+  } finally {
+    extracting=false; // FIX #3: always release lock
+  }
+}
+
+// ── Boot ───────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
